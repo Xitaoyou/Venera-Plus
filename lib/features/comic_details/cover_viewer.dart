@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:venera_plus/components/pull_down_to_dismiss.dart';
-import 'package:venera_plus/foundation/appdata.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:venera_plus/components/effects.dart';
 import 'package:venera_plus/foundation/context.dart';
@@ -31,29 +29,9 @@ class ComicCoverViewer extends StatefulWidget {
 class _ComicCoverViewerState extends State<ComicCoverViewer> {
   bool isAppBarShow = true;
 
-  final _zoomControllers = <int, PhotoViewController>{};
-
-  bool _canDismiss() {
-    if (appdata.settings['pullDownToDismiss'] != true ||
-        appdata.settings['swipeToCollectImage'] == true ||
-        appdata.settings['quickCollectImage'] == 'Swipe') return false;
-    final photo = _zoomControllers[0];
-    final initial = photo?.getInitialScale?.call();
-    return initial != null && ((photo?.scale ?? initial) - initial).abs() < 0.01;
-  }
-
-  @override
-  void dispose() {
-    for (final photo in _zoomControllers.values) { photo.dispose(); }
-    super.dispose();
-  }
-
-
   @override
   Widget build(BuildContext context) {
-    return PullDownToDismiss(
-      canStart: _canDismiss,
-      child: PopScope(
+    return PopScope(
       canPop: true,
       child: Scaffold(
         backgroundColor: context.colorScheme.surface,
@@ -61,7 +39,6 @@ class _ComicCoverViewerState extends State<ComicCoverViewer> {
           children: [
             Positioned.fill(
               child: PhotoView(
-                controller: _zoomControllers.putIfAbsent(0, PhotoViewController.new),
                 imageProvider: widget.imageProvider,
                 minScale: PhotoViewComputedScale.contained * 1.0,
                 maxScale: PhotoViewComputedScale.covered * 3.0,
@@ -97,7 +74,6 @@ class _ComicCoverViewerState extends State<ComicCoverViewer> {
             ),
           ],
         ),
-      ),
       ),
     );
   }

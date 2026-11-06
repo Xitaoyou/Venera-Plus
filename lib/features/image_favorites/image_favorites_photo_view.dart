@@ -1,5 +1,3 @@
-import 'package:venera_plus/components/pull_down_to_dismiss.dart';
-import 'package:venera_plus/foundation/appdata.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,25 +40,6 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
 
   bool isAppBarShow = false;
 
-  final _zoomControllers = <int, PhotoViewController>{};
-
-  bool _canDismiss() {
-    if (appdata.settings['pullDownToDismiss'] != true ||
-        appdata.settings['swipeToCollectImage'] == true ||
-        appdata.settings['quickCollectImage'] == 'Swipe') return false;
-    final photo = _zoomControllers[currentPage];
-    final initial = photo?.getInitialScale?.call();
-    return initial != null && ((photo?.scale ?? initial) - initial).abs() < 0.01;
-  }
-
-  @override
-  void dispose() {
-    for (final photo in _zoomControllers.values) { photo.dispose(); }
-    controller.dispose();
-    super.dispose();
-  }
-
-
   @override
   void initState() {
     var current = 0;
@@ -94,7 +73,6 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
   PhotoViewGalleryPageOptions _buildItem(BuildContext context, int index) {
     var image = images[index];
     return PhotoViewGalleryPageOptions(
-      controller: _zoomControllers.putIfAbsent(index, PhotoViewController.new),
       // 图片加载器 支持本地、网络
       imageProvider: ImageFavoritesProvider(image),
       // 初始化大小 全部展示
@@ -113,9 +91,7 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
 
   @override
   Widget build(BuildContext context) {
-    return PullDownToDismiss(
-      canStart: _canDismiss,
-      child: PopScope(
+    return PopScope(
       onPopInvokedWithResult: (bool didPop, Object? result) async {
         if (didPop) {
           onPop();
@@ -186,7 +162,6 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
             ),
           ],
         ),
-      ),
       ),
     );
   }

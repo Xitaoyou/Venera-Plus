@@ -4,10 +4,6 @@ run-name: 构建 ${{ github.ref_name }}
 on:
   workflow_call:
     inputs:
-      build_ref:
-        required: false
-        type: string
-        default: ""
       build_android:
         required: false
         type: boolean
@@ -373,8 +369,6 @@ jobs:
       SCCACHE_IGNORE_SERVER_IO_ERROR: "1"
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.build_ref || github.ref }}
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
