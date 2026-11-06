@@ -14,7 +14,7 @@ Features:
 Release:
 1. Merge the feature branch into main.
 2. The custom-ios-release workflow tests, builds an unsigned iOS IPA and publishes it in this fork's Releases.
-3. Daily sync merges official upstream main into this fork and dispatches the custom build on changes.
+3. Six-hourly sync merges official upstream main into this fork and dispatches the custom build on changes.
 4. If merging or testing fails, the workflow fails rather than replacing the published package.
 
 Important:
@@ -23,3 +23,5 @@ Important:
 - Follow the custom fork's Releases, not the original application's releases.
 - Never install the upstream IPA over this customized build, because doing so removes its UI features.
 - All gestures and workflows require iPhone validation before being considered production-ready.
+
+Sync retains fork-owned `.github/workflows` files so the standard GitHub Actions token can push without storing a personal token. Upstream application code is merged normally; upstream CI changes must be reviewed separately. Merge conflicts stop the job.

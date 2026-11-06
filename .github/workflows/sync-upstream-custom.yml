@@ -1,7 +1,7 @@
 name: Sync official Venera+ and keep customizations
 on:
   schedule:
-    - cron: '13 4 * * *'
+    - cron: '13 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -31,7 +31,14 @@ jobs:
           git remote add upstream https://github.com/Venera-Works/Venera-Plus.git
           git fetch upstream main
           BEFORE=$(git rev-parse HEAD)
-          git merge --no-edit upstream/main
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git merge --no-commit --no-ff upstream/main
+          # Keep fork-owned CI. GITHUB_TOKEN cannot change workflow files.
+          git restore --source=HEAD --staged --worktree .github/workflows
+          git commit -m "Merge official upstream while preserving fork CI"
           AFTER=$(git rev-parse HEAD)
           if [[ "$BEFORE" != "$AFTER" ]]; then
             git push origin HEAD:main
