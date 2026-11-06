@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 /// Passive pointer observer: does not override PhotoView gesture arena.

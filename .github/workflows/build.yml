@@ -423,7 +423,7 @@ jobs:
           from pathlib import Path
           source = Path('pubspec.yaml')
           text = source.read_text()
-          build = 100000 + int(os.environ['CUSTOM_IOS_BUILD'])
+          build = 200000 + int(os.environ['CUSTOM_IOS_BUILD'])
           patched, count = re.subn(
               r'(?m)^(version:\s*)([^+\n]+)(?:\+[0-9]+)?$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r\n')
           IOS_VERSION="${APP_VERSION%%+*}"

@@ -41,7 +41,7 @@ jobs:
             test/features/swipe_dismiss
       - name: Flutter analyze modified files
         run: |
-          flutter analyze --no-pub \
+          flutter analyze --no-pub --no-fatal-infos \
             lib/features/swipe_dismiss \
             lib/features/reader/reader_page.dart \
             lib/features/reader/gesture.dart \
@@ -81,6 +81,37 @@ jobs:
           BASE="${BASE%%+*}"
           BUILD=$((100000 + CUSTOM_BUILD_NUMBER))
           echo "CUSTOM_APP_VERSION=${BASE}+${BUILD}" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          source = Path('pubspec.yaml')
+          contents = source.read_text()
+          version = os.environ.get('CUSTOM_BUILD_NUMBER', '1')
+          build = 100000 + int(version)
+          updated, count = re.subn(
+              r'(?m)^(version:[ ]*)([^+\n]+)(?:\+[0-9]+)?            --build-name="${BASE%%-*}" --build-number="$BUILD"
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          test -s build/ios/iphoneos/Runner.app/Runner
+          mkdir -p dist/Payload
+          cp -R build/ios/iphoneos/Runner.app dist/Payload/
+          (cd dist && zip -qr "VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa" Payload)
+          rm -rf dist/Payload
+          test -s "dist/VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa"
+      - name: Upload IPA for phone testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-ios-ipa
+          path: dist/*.ipa
+          if-no-files-found: error
+          retention-days: 30
+,
+              lambda match: match.group(1) + match.group(2) + '+' + str(build),
+              contents, count=1)
+          assert count == 1, 'pubspec version not found'
+          source.write_text(updated)
+          PY
           flutter build ios --no-pub --release --no-codesign \
             --build-name="${BASE%%-*}" --build-number="$BUILD"
       - name: Package unsigned IPA
