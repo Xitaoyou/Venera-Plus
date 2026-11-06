@@ -807,20 +807,26 @@ class ReaderState extends State<Reader>
       child: Overlay.wrap(
         child: ReaderScaffold(
           child: SwipeDismissView(
-            enabled: App.isIOS && appdata.settings['swipeDownToDismiss'] == true,
+            enabled:
+                App.isIOS && appdata.settings['swipeDownToDismiss'] == true,
             canStart: () {
               final controller = imageViewController;
               final unzoomed = controller is GalleryModeState
                   ? controller.canPullToCollect
                   : controller is ContinuousModeState
-                      ? controller.canPullToCollect : false;
+                  ? controller.canPullToCollect
+                  : false;
               return canDismissReaderBySwipe(
                 isIOS: App.isIOS,
                 enabled: appdata.settings['swipeDownToDismiss'] == true,
                 verticalReading: mode.isTopToBottom,
                 pullToCollect: appdata.settings['quickCollectImage'] == 'Swipe',
                 zoomed: !unzoomed,
-                busy: isLoading || isPageAnimating || isOnChapterCommentsPage,
+                busy:
+                    isLoading ||
+                    isPageAnimating ||
+                    isOnChapterCommentsPage ||
+                    context.readerScaffold.isOpen,
               );
             },
             onDismiss: () => Navigator.of(context).maybePop(),

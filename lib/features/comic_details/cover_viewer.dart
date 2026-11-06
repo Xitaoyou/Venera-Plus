@@ -33,62 +33,70 @@ class _ComicCoverViewerState extends State<ComicCoverViewer> {
   bool isAppBarShow = true;
   final PhotoViewController _dismissController = PhotoViewController();
   @override
-  void dispose() { _dismissController.dispose(); super.dispose(); }
+  void dispose() {
+    _dismissController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
       child: SwipeDismissView(
-        enabled: App.isIOS && appdata.settings['swipeDownToDismiss'] == true,
+        enabled:
+            App.isIOS &&
+            appdata.settings['swipeDownToDismiss'] == true &&
+            appdata.settings['quickCollectImage'] != 'Swipe',
         canStart: () {
           final scale = _dismissController.scale;
           final initial = _dismissController.getInitialScale?.call();
-          return initial == null || scale == null || (scale - initial).abs() < 0.02;
+          return initial == null ||
+              scale == null ||
+              (scale - initial).abs() < 0.02;
         },
         onDismiss: () => Navigator.of(context).maybePop(),
         child: Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: PhotoView(
-                controller: _dismissController,
-                imageProvider: widget.imageProvider,
-                minScale: PhotoViewComputedScale.contained * 1.0,
-                maxScale: PhotoViewComputedScale.covered * 3.0,
-                backgroundDecoration: BoxDecoration(
-                  color: context.colorScheme.surface,
-                ),
-                loadingBuilder: (context, event) => Center(
-                  child: SizedBox(
-                    width: 24.0,
-                    height: 24.0,
-                    child: CircularProgressIndicator(
-                      value: event == null || event.expectedTotalBytes == null
-                          ? null
-                          : event.cumulativeBytesLoaded /
-                                event.expectedTotalBytes!,
+          backgroundColor: context.colorScheme.surface,
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: PhotoView(
+                  controller: _dismissController,
+                  imageProvider: widget.imageProvider,
+                  minScale: PhotoViewComputedScale.contained * 1.0,
+                  maxScale: PhotoViewComputedScale.covered * 3.0,
+                  backgroundDecoration: BoxDecoration(
+                    color: context.colorScheme.surface,
+                  ),
+                  loadingBuilder: (context, event) => Center(
+                    child: SizedBox(
+                      width: 24.0,
+                      height: 24.0,
+                      child: CircularProgressIndicator(
+                        value: event == null || event.expectedTotalBytes == null
+                            ? null
+                            : event.cumulativeBytesLoaded /
+                                  event.expectedTotalBytes!,
+                      ),
                     ),
                   ),
+                  onTapUp: (context, details, controllerValue) {
+                    setState(() {
+                      isAppBarShow = !isAppBarShow;
+                    });
+                  },
+                  heroAttributes: PhotoViewHeroAttributes(tag: widget.heroTag),
                 ),
-                onTapUp: (context, details, controllerValue) {
-                  setState(() {
-                    isAppBarShow = !isAppBarShow;
-                  });
-                },
-                heroAttributes: PhotoViewHeroAttributes(tag: widget.heroTag),
               ),
-            ),
-            AnimatedPositioned(
-              top: isAppBarShow ? 0 : -(context.padding.top + 52),
-              left: 0,
-              right: 0,
-              duration: const Duration(milliseconds: 180),
-              child: _buildAppBar(),
-            ),
-          ],
-        ),
+              AnimatedPositioned(
+                top: isAppBarShow ? 0 : -(context.padding.top + 52),
+                left: 0,
+                right: 0,
+                duration: const Duration(milliseconds: 180),
+                child: _buildAppBar(),
+              ),
+            ],
+          ),
         ),
       ),
     );

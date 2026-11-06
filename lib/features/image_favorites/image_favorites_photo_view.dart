@@ -58,12 +58,16 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
     controller = PageController(initialPage: current);
     super.initState();
   }
+
   @override
   void dispose() {
     controller.dispose();
-    for (final photo in _photoControllers.values) { photo.dispose(); }
+    for (final photo in _photoControllers.values) {
+      photo.dispose();
+    }
     super.dispose();
   }
+
   void onPop() {
     List<ImageFavorite> tempList = cancelImageFavorites.entries
         .where((e) => e.value == true)
@@ -107,80 +111,86 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
         }
       },
       child: SwipeDismissView(
-        enabled: App.isIOS && appdata.settings['swipeDownToDismiss'] == true,
+        enabled:
+            App.isIOS &&
+            appdata.settings['swipeDownToDismiss'] == true &&
+            appdata.settings['quickCollectImage'] != 'Swipe',
         canStart: () {
           final photo = _photoControllers[currentPage];
           if (photo == null) return true;
           final initial = photo.getInitialScale?.call();
           final scale = photo.scale;
-          return initial == null || scale == null || (scale - initial).abs() < 0.02;
+          return initial == null ||
+              scale == null ||
+              (scale - initial).abs() < 0.02;
         },
         onDismiss: () => Navigator.of(context).maybePop(),
         child: Listener(
-        onPointerSignal: (event) {
-          if (HardwareKeyboard.instance.isControlPressed) {
-            return;
-          }
-          if (event is PointerScrollEvent) {
-            if (event.scrollDelta.dy > 0) {
-              if (controller.page! >= images.length - 1) {
-                return;
-              }
-              controller.nextPage(
-                duration: Duration(milliseconds: 180),
-                curve: Curves.ease,
-              );
-            } else {
-              if (controller.page! <= 0) {
-                return;
-              }
-              controller.previousPage(
-                duration: Duration(milliseconds: 180),
-                curve: Curves.ease,
-              );
+          onPointerSignal: (event) {
+            if (HardwareKeyboard.instance.isControlPressed) {
+              return;
             }
-          }
-        },
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: PhotoViewGallery.builder(
-                backgroundDecoration: BoxDecoration(
-                  color: context.colorScheme.surface,
-                ),
-                builder: _buildItem,
-                itemCount: images.length,
-                loadingBuilder: (context, event) => Center(
-                  child: SizedBox(
-                    width: 20.0,
-                    height: 20.0,
-                    child: CircularProgressIndicator(
-                      backgroundColor: context.colorScheme.surfaceContainerHigh,
-                      value: event == null || event.expectedTotalBytes == null
-                          ? null
-                          : event.cumulativeBytesLoaded /
-                                event.expectedTotalBytes!,
+            if (event is PointerScrollEvent) {
+              if (event.scrollDelta.dy > 0) {
+                if (controller.page! >= images.length - 1) {
+                  return;
+                }
+                controller.nextPage(
+                  duration: Duration(milliseconds: 180),
+                  curve: Curves.ease,
+                );
+              } else {
+                if (controller.page! <= 0) {
+                  return;
+                }
+                controller.previousPage(
+                  duration: Duration(milliseconds: 180),
+                  curve: Curves.ease,
+                );
+              }
+            }
+          },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: PhotoViewGallery.builder(
+                  backgroundDecoration: BoxDecoration(
+                    color: context.colorScheme.surface,
+                  ),
+                  builder: _buildItem,
+                  itemCount: images.length,
+                  loadingBuilder: (context, event) => Center(
+                    child: SizedBox(
+                      width: 20.0,
+                      height: 20.0,
+                      child: CircularProgressIndicator(
+                        backgroundColor:
+                            context.colorScheme.surfaceContainerHigh,
+                        value: event == null || event.expectedTotalBytes == null
+                            ? null
+                            : event.cumulativeBytesLoaded /
+                                  event.expectedTotalBytes!,
+                      ),
                     ),
                   ),
+                  pageController: controller,
+                  onPageChanged: (index) {
+                    setState(() {
+                      currentPage = index;
+                    });
+                  },
                 ),
-                pageController: controller,
-                onPageChanged: (index) {
-                  setState(() {
-                    currentPage = index;
-                  });
-                },
               ),
-            ),
-            buildPageInfo(),
-            AnimatedPositioned(
-              top: isAppBarShow ? 0 : -(context.padding.top + 52),
-              left: 0,
-              right: 0,
-              duration: Duration(milliseconds: 180),
-              child: buildAppBar(),
-            ),
-          ],
-        ),
+              buildPageInfo(),
+              AnimatedPositioned(
+                top: isAppBarShow ? 0 : -(context.padding.top + 52),
+                left: 0,
+                right: 0,
+                duration: Duration(milliseconds: 180),
+                child: buildAppBar(),
+              ),
+            ],
+          ),
         ),
       ),
     );

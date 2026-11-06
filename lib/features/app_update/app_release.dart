@@ -147,9 +147,11 @@ bool _compareVersion(String remoteVersion, String currentVersion) {
   if (_comparePrerelease(remotePre, currentPre)) return true;
   if (remotePre != currentPre) return false;
   final remoteBuild = remoteVersion.contains('+')
-      ? int.tryParse(remoteVersion.split('+').last) ?? 0 : 0;
+      ? int.tryParse(remoteVersion.split('+').last) ?? 0
+      : 0;
   final currentBuild = currentVersion.contains('+')
-      ? int.tryParse(currentVersion.split('+').last) ?? 0 : 0;
+      ? int.tryParse(currentVersion.split('+').last) ?? 0
+      : 0;
   return remoteBuild > currentBuild;
 }
 

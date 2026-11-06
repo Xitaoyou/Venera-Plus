@@ -321,6 +321,8 @@ class ReaderGestureDetectorState
   bool _longPressInProgress = false;
 
   bool get _canPullToCollect {
+    if (App.isIOS && appdata.settings['quickCollectImage'] != 'Swipe')
+      return false;
     if (context.readerScaffold.isOpen ||
         reader.isLoading ||
         reader.isPageAnimating ||

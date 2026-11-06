@@ -4,7 +4,7 @@ Fork: https://github.com/Xitaoyou/Venera-Plus
 
 Features:
 - Drag down to exit an unzoomed horizontal comic reader.
-- Existing "Swipe" picture collection takes precedence; user sees a one-time change notification.
+- The "Swipe" picture collection preference controls pull-to-collect on iOS and takes precedence over dismissal in both readers and previews. Enabling it shows a notification.
 - Vertical reading automatically disables dismissal without a notification.
 - Drag down to dismiss comic-cover and image-favorites fullscreen previews; zoomed images retain pan.
 - iOS-only preferences; no changes to Android gesture defaults.

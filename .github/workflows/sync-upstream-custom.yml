@@ -8,6 +8,10 @@ permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: custom-upstream-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest

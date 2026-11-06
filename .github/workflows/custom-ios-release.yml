@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: custom-ios-release
+  cancel-in-progress: false
+
 jobs:
   gesture-tests:
     runs-on: ubuntu-latest
@@ -19,7 +23,9 @@ jobs:
           flutter-version-file: pubspec.yaml
           cache: true
       - run: flutter pub get --enforce-lockfile
-      - run: flutter test test/features/swipe_dismiss/
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze --no-fatal-infos --fatal-warnings
+      - run: flutter test test/features/swipe_dismiss/ test/features/app_update/
 
   build-ios:
     needs: gesture-tests

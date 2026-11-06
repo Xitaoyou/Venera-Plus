@@ -11,7 +11,9 @@ void main() {
     expect(allowsPrereleaseAppUpdates('1.10.0-rc.1'), isTrue);
     expect(isNewerAppVersion('1.10.0', '1.9.3'), isTrue);
     expect(isNewerAppVersion('1.10.0', '1.10.0-rc.2'), isTrue);
-    expect(isNewerAppVersion('v1.10.0+32', '1.10.0+31'), isFalse);
+    expect(isNewerAppVersion('v1.10.0+32', '1.10.0+31'), isTrue);
+    expect(isNewerAppVersion('1.10.0+31', '1.10.0+32'), isFalse);
+    expect(isNewerAppVersion('1.10.0+32', '1.10.0+32'), isFalse);
     expect(isNewerAppVersion('1.9.9', '1.10.0'), isFalse);
   });
 

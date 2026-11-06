@@ -267,7 +267,7 @@ void main() {
         expect(
           release.notes,
           contains(
-            '[Details](https://github.com/Venera-Works/Venera-Plus/issues/1)',
+            '[Details](https://github.com/Xitaoyou/Venera-Plus/issues/1)',
           ),
         );
         expect(

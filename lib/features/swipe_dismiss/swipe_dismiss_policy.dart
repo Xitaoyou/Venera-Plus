@@ -1,1 +1,9 @@
-bool canDismissReaderBySwipe({required bool isIOS,required bool enabled,required bool verticalReading,required bool pullToCollect,required bool zoomed,required bool busy}) => isIOS && enabled && !verticalReading && !pullToCollect && !zoomed && !busy;
+bool canDismissReaderBySwipe({
+  required bool isIOS,
+  required bool enabled,
+  required bool verticalReading,
+  required bool pullToCollect,
+  required bool zoomed,
+  required bool busy,
+}) =>
+    isIOS && enabled && !verticalReading && !pullToCollect && !zoomed && !busy;

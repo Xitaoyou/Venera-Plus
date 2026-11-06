@@ -136,29 +136,35 @@ class _ReaderSettingsState extends State<ReaderSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Reading".tl)),
-        if (App.isIOS) SwitchListTile(
-          title: const Text('下滑返回'),
-          subtitle: const Text('上下滑阅读和下拉收藏时自动停用'),
-          value: appdata.settings['swipeDownToDismiss'] == true,
-          onChanged: (v) {
-            setState(() => appdata.settings['swipeDownToDismiss'] = v);
-            appdata.saveData();
-            widget.onChanged?.call('swipeDownToDismiss');
-          },
-        ).toSliver(),
-        if (App.isIOS) SelectSetting(
-          title: '图片快捷收藏',
-          settingKey: 'quickCollectImage',
-          optionTranslation: const {'No': '关闭', 'DoubleTap': '双击收藏', 'Swipe': '下拉收藏'},
-          onChanged: () {
-            setState(() {});
-            if (appdata.settings['quickCollectImage'] == 'Swipe' &&
-                appdata.settings['swipeDownToDismiss'] == true) {
-              context.showMessage(message: '已开启下拉收藏，阅读器下滑返回暂时停用；关闭收藏后自动恢复。');
-            }
-            widget.onChanged?.call('quickCollectImage');
-          },
-        ).toSliver(),
+        if (App.isIOS)
+          SwitchListTile(
+            title: const Text('下滑返回'),
+            subtitle: const Text('上下滑阅读和下拉收藏时自动停用'),
+            value: appdata.settings['swipeDownToDismiss'] == true,
+            onChanged: (v) {
+              setState(() => appdata.settings['swipeDownToDismiss'] = v);
+              appdata.saveData();
+              widget.onChanged?.call('swipeDownToDismiss');
+            },
+          ).toSliver(),
+        if (App.isIOS)
+          SelectSetting(
+            title: '图片快捷收藏',
+            settingKey: 'quickCollectImage',
+            optionTranslation: const {
+              'No': '关闭',
+              'DoubleTap': '双击收藏',
+              'Swipe': '下拉收藏',
+            },
+            onChanged: () {
+              setState(() {});
+              if (appdata.settings['quickCollectImage'] == 'Swipe' &&
+                  appdata.settings['swipeDownToDismiss'] == true) {
+                context.showMessage(message: '已开启下拉收藏，阅读器下滑返回暂时停用；关闭收藏后自动恢复。');
+              }
+              widget.onChanged?.call('quickCollectImage');
+            },
+          ).toSliver(),
         if (comicId != null && sourceKey != null)
           SliverMainAxisGroup(
             slivers: [

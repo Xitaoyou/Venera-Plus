@@ -222,7 +222,8 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
     final portable = widget.release.windowsAsset(portable: true, arm64: arm64);
     final packageUnavailable = isAndroid
         ? !_loadingApk && _apk == null
-        : isIOS ? iosIpa == null
+        : isIOS
+        ? iosIpa == null
         : isWindows && (installer == null || portable == null);
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -361,12 +362,16 @@ class _AppUpdateDialogState extends State<AppUpdateDialog> {
                           ),
                       if (isIOS) ...[
                         FilledButton(
-                          onPressed: iosIpa == null ? null : () => _openUrl(iosIpa.url),
+                          onPressed: iosIpa == null
+                              ? null
+                              : () => _openUrl(iosIpa.url),
                           child: const Text('下载定制版 IPA'),
                         ),
                         const Padding(
                           padding: EdgeInsets.only(top: 8),
-                          child: Text('请使用 AltStore / SideStore 等侧载工具覆盖安装。iOS 不允许应用静默替换 IPA。'),
+                          child: Text(
+                            '请使用 AltStore / SideStore 等侧载工具覆盖安装。iOS 不允许应用静默替换 IPA。',
+                          ),
                         ),
                       ],
                       if (isWindows) ...[
