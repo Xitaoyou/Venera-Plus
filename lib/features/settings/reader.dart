@@ -397,6 +397,20 @@ class _ReaderSettingsState extends State<ReaderSettings> {
             ],
           ),
         ),
+        SwitchSetting(
+          title: 'Swipe down to collect images'.tl,
+          settingKey: 'swipeToCollectImage',
+          onChanged: () { setState(() {}); widget.onChanged?.call('swipeToCollectImage'); },
+        ).toSliver(),
+        SwitchSetting(
+          title: 'Swipe down to return'.tl,
+          settingKey: 'pullDownToDismiss',
+          subtitle: (appdata.settings['swipeToCollectImage'] == true ||
+              appdata.settings['quickCollectImage'] == 'Swipe')
+              ? 'Swipe down to return is unavailable while swipe collection is enabled.'.tl
+              : null,
+          onChanged: () { setState(() {}); widget.onChanged?.call('pullDownToDismiss'); },
+        ).toSliver(),
         SelectSetting(
           title: "Reading mode".tl,
           settingKey: "readerMode",

@@ -1,5 +1,9 @@
 {
   "zh_CN": {
+    "Swipe down to collect images": "下滑收藏图片",
+    "Swipe down to return": "下滑返回",
+    "Swipe down to return is unavailable while swipe collection is enabled.": "开启滑动收藏后，下滑返回不可用。",
+
     "Cancellation requested. Waiting for the current operation to finish safely.": "已请求取消，正在等待当前操作安全结束。",
     "Capturing...": "正在采集…",
     "Clear report": "清除报告",
@@ -1284,6 +1288,10 @@
     "Use the saved backup location.": "使用已保存的备份位置。"
   },
   "zh_TW": {
+    "Swipe down to collect images": "下滑收藏圖片",
+    "Swipe down to return": "下滑返回",
+    "Swipe down to return is unavailable while swipe collection is enabled.": "開啟滑動收藏後，下滑返回不可用。",
+
     "Cancellation requested. Waiting for the current operation to finish safely.": "已要求取消，正在等待目前操作安全結束。",
     "Capturing...": "正在採集…",
     "Clear report": "清除報告",

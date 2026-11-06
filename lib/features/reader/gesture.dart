@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:venera_plus/components/pull_down_to_dismiss.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:venera_plus/components/menu.dart';
@@ -93,7 +94,12 @@ class ReaderGestureDetectorState
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
+    return PullDownToDismiss(
+      canStart: () => appdata.settings['pullDownToDismiss'] == true &&
+          appdata.settings['swipeToCollectImage'] != true &&
+          appdata.settings['quickCollectImage'] != 'Swipe' &&
+          _canPullImage,
+      child: Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (event) {
         if (event.position == Offset.zero) {
@@ -264,6 +270,7 @@ class ReaderGestureDetectorState
           );
         },
       ),
+      ),
     );
   }
 
@@ -320,7 +327,11 @@ class ReaderGestureDetectorState
 
   bool _longPressInProgress = false;
 
-  bool get _canPullToCollect {
+  bool get _canPullToCollect =>
+      (appdata.settings['swipeToCollectImage'] == true ||
+          appdata.settings['quickCollectImage'] == 'Swipe') && _canPullImage;
+
+  bool get _canPullImage {
     if (context.readerScaffold.isOpen ||
         reader.isLoading ||
         reader.isPageAnimating ||

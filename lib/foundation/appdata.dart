@@ -756,6 +756,8 @@ class Settings with ChangeNotifier {
     'quickFavorite': null,
     'enableTurnPageByVolumeKey': true,
     'enableClockAndBatteryInfoInReader': true,
+    'swipeToCollectImage': true,
+    'pullDownToDismiss': true,
     'quickCollectImage': 'No', // No, DoubleTap, Swipe
     'authorizationRequired': false,
     'onClickFavorite': 'viewDetail', // viewDetail, read
