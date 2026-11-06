@@ -19,6 +19,8 @@ import 'package:venera_plus/features/favorites/favorites.dart';
 import 'package:venera_plus/features/history/history.dart';
 import 'package:venera_plus/features/reader/chapter_completion.dart';
 import 'package:venera_plus/features/reader/gesture.dart';
+import 'package:venera_plus/features/swipe_dismiss/swipe_dismiss_view.dart';
+import 'package:venera_plus/features/swipe_dismiss/swipe_dismiss_policy.dart';
 import 'package:venera_plus/features/reader/images.dart';
 import 'package:venera_plus/features/reader/reading_session.dart';
 import 'package:venera_plus/features/reader/remote_progress.dart';
@@ -804,10 +806,29 @@ class ReaderState extends State<Reader>
       onKeyEvent: onKeyEvent,
       child: Overlay.wrap(
         child: ReaderScaffold(
-          child: ReaderGestureDetector(
-            child: ReaderImages(
-              key: Key(
-                '${mode.isWaterfall ? mode.key : chapter}:$_bookmarkNavigationGeneration',
+          child: SwipeDismissView(
+            enabled: App.isIOS && appdata.settings['swipeDownToDismiss'] == true,
+            canStart: () {
+              final controller = imageViewController;
+              final unzoomed = controller is GalleryModeState
+                  ? controller.canPullToCollect
+                  : controller is ContinuousModeState
+                      ? controller.canPullToCollect : false;
+              return canDismissReaderBySwipe(
+                isIOS: App.isIOS,
+                enabled: appdata.settings['swipeDownToDismiss'] == true,
+                verticalReading: mode.isTopToBottom,
+                pullToCollect: appdata.settings['quickCollectImage'] == 'Swipe',
+                zoomed: !unzoomed,
+                busy: isLoading || isPageAnimating || isOnChapterCommentsPage,
+              );
+            },
+            onDismiss: () => Navigator.of(context).maybePop(),
+            child: ReaderGestureDetector(
+              child: ReaderImages(
+                key: Key(
+                  '${mode.isWaterfall ? mode.key : chapter}:$_bookmarkNavigationGeneration',
+                ),
               ),
             ),
           ),
