@@ -739,7 +739,7 @@ class Settings with ChangeNotifier {
     'skipUnavailableDownloadImages': false,
     'enableLongPressToZoom': true,
     'longPressZoomPosition': "press", // press, center
-    'checkUpdateOnStart': false,
+    'checkUpdateOnStart': true,
     'limitImageWidth': true,
     'readerSideMargin': 0, // Percent on each side of the limited flow width.
     'webdav': [], // empty means not configured
@@ -757,6 +757,7 @@ class Settings with ChangeNotifier {
     'enableTurnPageByVolumeKey': true,
     'enableClockAndBatteryInfoInReader': true,
     'quickCollectImage': 'No', // No, DoubleTap, Swipe
+    'swipeDownToDismiss': true, // customized iOS preference
     'authorizationRequired': false,
     'onClickFavorite': 'viewDetail', // viewDetail, read
     'enableDnsOverrides': false,
