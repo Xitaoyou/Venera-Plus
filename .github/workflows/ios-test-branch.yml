@@ -1,0 +1,101 @@
+name: iOS custom feature branch test
+on:
+  push:
+    branches:
+      - feature/ios-swipe-custom-updates
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: Analyze, test, and build unsigned iOS IPA
+    runs-on: macos-15
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          architecture: arm64
+          cache: true
+      - name: Select Xcode
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app
+      - name: Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Format patched Dart files for this test build
+        run: |
+          dart format \
+            lib/foundation/app.dart \
+            lib/foundation/appdata.dart \
+            lib/features/app_update \
+            lib/features/comic_details/cover_viewer.dart \
+            lib/features/image_favorites/image_favorites_photo_view.dart \
+            lib/features/reader/gesture.dart \
+            lib/features/reader/reader_page.dart \
+            lib/features/settings/reader.dart \
+            lib/features/settings/about.dart \
+            lib/features/swipe_dismiss \
+            test/features/swipe_dismiss
+      - name: Flutter analyze modified files
+        run: |
+          flutter analyze --no-pub \
+            lib/features/swipe_dismiss \
+            lib/features/reader/reader_page.dart \
+            lib/features/reader/gesture.dart \
+            lib/features/comic_details/cover_viewer.dart \
+            lib/features/image_favorites/image_favorites_photo_view.dart \
+            lib/features/settings/reader.dart \
+            lib/features/app_update \
+            lib/foundation/app.dart \
+            lib/foundation/appdata.dart \
+            test/features/swipe_dismiss
+      - name: Run custom gesture tests
+        run: flutter test test/features/swipe_dismiss/
+      - name: Prepare Rust toolchains
+        run: |
+          python3 .github/scripts/prepare_rust_toolchain.py \
+            --target aarch64-apple-darwin \
+            --target x86_64-apple-darwin \
+            --target aarch64-apple-ios
+      - name: Serialize rustup
+        run: |
+          install "$(command -v rustup)" "$RUNNER_TEMP/rustup"
+          mkdir -p "$HOME/.cargo/bin"
+          rm -f "$HOME/.cargo/bin/rustup"
+          install .github/scripts/serialized_rustup.py "$HOME/.cargo/bin/rustup"
+          chmod +x "$HOME/.cargo/bin/rustup"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          echo "RUSTUP_REAL_BINARY=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
+          echo "RUSTUP_LOCK_FILE=$RUNNER_TEMP/venera-plus-rustup.lock" >> "$GITHUB_ENV"
+      - name: Download native iOS OpenList core
+        run: python3 .github/scripts/fetch_openlist_core.py ios
+      - name: Build iOS
+        env:
+          CUSTOM_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          BASE=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)
+          BASE="${BASE%%+*}"
+          BUILD=$((100000 + CUSTOM_BUILD_NUMBER))
+          echo "CUSTOM_APP_VERSION=${BASE}+${BUILD}" >> "$GITHUB_ENV"
+          flutter build ios --no-pub --release --no-codesign \
+            --build-name="${BASE%%-*}" --build-number="$BUILD"
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          test -s build/ios/iphoneos/Runner.app/Runner
+          mkdir -p dist/Payload
+          cp -R build/ios/iphoneos/Runner.app dist/Payload/
+          (cd dist && zip -qr "VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa" Payload)
+          rm -rf dist/Payload
+          test -s "dist/VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa"
+      - name: Upload IPA for phone testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-ios-ipa
+          path: dist/*.ipa
+          if-no-files-found: error
+          retention-days: 30
