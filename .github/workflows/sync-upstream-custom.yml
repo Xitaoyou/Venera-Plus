@@ -50,4 +50,5 @@ jobs:
         if: steps.merge.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: gh workflow run custom-ios-release.yml --ref main
