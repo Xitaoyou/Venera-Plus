@@ -1,0 +1,42 @@
+name: Sync official Venera+ and keep customizations
+on:
+  schedule:
+    - cron: '13 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Merge official source without overwriting the custom features
+        id: merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream https://github.com/Venera-Works/Venera-Plus.git
+          git fetch upstream main
+          BEFORE=$(git rev-parse HEAD)
+          git merge --no-edit upstream/main
+          AFTER=$(git rev-parse HEAD)
+          if [[ "$BEFORE" != "$AFTER" ]]; then
+            git push origin HEAD:main
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Dispatch validated custom iOS build
+        if: steps.merge.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run custom-ios-release.yml --ref main
