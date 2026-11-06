@@ -3,6 +3,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:venera_plus/features/swipe_dismiss/swipe_dismiss_view.dart';
+import 'package:venera_plus/foundation/app.dart';
+import 'package:venera_plus/foundation/appdata.dart';
 import 'package:venera_plus/components/effects.dart';
 import 'package:venera_plus/foundation/context.dart';
 import 'package:venera_plus/foundation/file_interaction.dart';
@@ -28,17 +31,29 @@ class ComicCoverViewer extends StatefulWidget {
 
 class _ComicCoverViewerState extends State<ComicCoverViewer> {
   bool isAppBarShow = true;
+  final PhotoViewController _dismissController = PhotoViewController();
+  @override
+  void dispose() { _dismissController.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
-      child: Scaffold(
+      child: SwipeDismissView(
+        enabled: App.isIOS && appdata.settings['swipeDownToDismiss'] == true,
+        canStart: () {
+          final scale = _dismissController.scale;
+          final initial = _dismissController.getInitialScale?.call();
+          return initial == null || scale == null || (scale - initial).abs() < 0.02;
+        },
+        onDismiss: () => Navigator.of(context).maybePop(),
+        child: Scaffold(
         backgroundColor: context.colorScheme.surface,
         body: Stack(
           children: [
             Positioned.fill(
               child: PhotoView(
+                controller: _dismissController,
                 imageProvider: widget.imageProvider,
                 minScale: PhotoViewComputedScale.contained * 1.0,
                 maxScale: PhotoViewComputedScale.covered * 3.0,
@@ -73,6 +88,7 @@ class _ComicCoverViewerState extends State<ComicCoverViewer> {
               child: _buildAppBar(),
             ),
           ],
+        ),
         ),
       ),
     );
