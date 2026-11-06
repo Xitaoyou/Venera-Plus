@@ -161,6 +161,7 @@ jobs:
       - name: 检查 rust-toolchain.toml
         run: rustup show
       - run: flutter pub get --enforce-lockfile
+      - run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 配置 rhttp 签名预编译库
         run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList Android 内核
@@ -336,6 +337,7 @@ jobs:
           echo "RUSTUP_REAL_BINARY=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
           echo "RUSTUP_LOCK_FILE=$RUNNER_TEMP/venera-plus-rustup.lock" >> "$GITHUB_ENV"
       - run: flutter pub get --enforce-lockfile
+      - run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 配置 rhttp 签名预编译库
         run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList macOS 内核
@@ -418,6 +420,7 @@ jobs:
           echo "RUSTUP_REAL_BINARY=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
           echo "RUSTUP_LOCK_FILE=$RUNNER_TEMP/venera-plus-rustup.lock" >> "$GITHUB_ENV"
       - run: flutter pub get --enforce-lockfile
+      - run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 配置 rhttp 签名预编译库
         run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList iOS 内核
@@ -507,6 +510,7 @@ jobs:
       - name: 准备 Rust 工具链
         run: python3 .github/scripts/prepare_rust_toolchain.py
       - run: flutter pub get --enforce-lockfile
+      - run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 配置 rhttp 签名预编译库
         run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList Linux x64 内核
@@ -573,6 +577,7 @@ jobs:
       - name: 准备 Rust 工具链
         run: python3 .github/scripts/prepare_rust_toolchain.py
       - run: flutter pub get --enforce-lockfile
+      - run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 配置 rhttp 签名预编译库
         run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList Linux ARM64 内核

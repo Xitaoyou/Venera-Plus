@@ -23,6 +23,7 @@ jobs:
           flutter-version-file: pubspec.yaml
           cache: true
       - run: flutter pub get --enforce-lockfile
+      - run: dart tool/prepare_rhttp_prebuilt.dart
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze --no-fatal-infos --fatal-warnings
       - run: flutter test test/features/swipe_dismiss/ test/features/app_update/
