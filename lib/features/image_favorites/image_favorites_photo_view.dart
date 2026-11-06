@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:venera_plus/features/swipe_dismiss/swipe_dismiss_view.dart';
 import 'package:venera_plus/components/effects.dart';
 import 'package:venera_plus/components/menu.dart';
 import 'package:venera_plus/components/message.dart';
 import 'package:venera_plus/features/history/history.dart';
 import 'package:venera_plus/features/reader/reader.dart';
 import 'package:venera_plus/foundation/app.dart';
+import 'package:venera_plus/foundation/appdata.dart';
 import 'package:venera_plus/foundation/context.dart';
 import 'package:venera_plus/foundation/file_interaction.dart';
 import 'package:venera_plus/foundation/file_type.dart';
@@ -32,6 +34,7 @@ class ImageFavoritesPhotoView extends StatefulWidget {
 
 class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
   late PageController controller;
+  final Map<int, PhotoViewController> _photoControllers = {};
   Map<ImageFavorite, bool> cancelImageFavorites = {};
 
   var images = <ImageFavorite>[];
@@ -55,7 +58,12 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
     controller = PageController(initialPage: current);
     super.initState();
   }
-
+  @override
+  void dispose() {
+    controller.dispose();
+    for (final photo in _photoControllers.values) { photo.dispose(); }
+    super.dispose();
+  }
   void onPop() {
     List<ImageFavorite> tempList = cancelImageFavorites.entries
         .where((e) => e.value == true)
@@ -73,6 +81,7 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
   PhotoViewGalleryPageOptions _buildItem(BuildContext context, int index) {
     var image = images[index];
     return PhotoViewGalleryPageOptions(
+      controller: _photoControllers.putIfAbsent(index, PhotoViewController.new),
       // 图片加载器 支持本地、网络
       imageProvider: ImageFavoritesProvider(image),
       // 初始化大小 全部展示
@@ -97,7 +106,17 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
           onPop();
         }
       },
-      child: Listener(
+      child: SwipeDismissView(
+        enabled: App.isIOS && appdata.settings['swipeDownToDismiss'] == true,
+        canStart: () {
+          final photo = _photoControllers[currentPage];
+          if (photo == null) return true;
+          final initial = photo.getInitialScale?.call();
+          final scale = photo.scale;
+          return initial == null || scale == null || (scale - initial).abs() < 0.02;
+        },
+        onDismiss: () => Navigator.of(context).maybePop(),
+        child: Listener(
         onPointerSignal: (event) {
           if (HardwareKeyboard.instance.isControlPressed) {
             return;
@@ -161,6 +180,7 @@ class _ImageFavoritesPhotoViewState extends State<ImageFavoritesPhotoView> {
               child: buildAppBar(),
             ),
           ],
+        ),
         ),
       ),
     );
