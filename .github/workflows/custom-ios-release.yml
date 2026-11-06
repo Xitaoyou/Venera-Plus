@@ -1,0 +1,68 @@
+name: Custom iOS IPA
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  gesture-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter test test/features/swipe_dismiss/
+
+  build-ios:
+    needs: gesture-tests
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build.yml
+    with:
+      build_android: false
+      build_windows: false
+      build_macos: false
+      build_ios: true
+      build_linux_x64: false
+      build_linux_arm64: false
+      custom_ios_build: ${{ github.run_number }}
+
+  publish:
+    needs: build-ios
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios_build
+          path: dist
+      - name: Publish uniquely versioned IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CUSTOM_BUILD: ${{ github.run_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r\n')
+          BASE="${VERSION%%+*}"
+          VERSION="${BASE}+$(($CUSTOM_BUILD + 100000))"
+          IPA="dist/VeneraPlus-ios-$VERSION.ipa"
+          test -s "$IPA"
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Version $VERSION already exists; refusing to overwrite an installed build."
+            exit 1
+          fi
+          gh release create "$VERSION" "$IPA" \
+            --title "Venera+ Custom iOS $VERSION" \
+            --notes "Custom iOS build with swipe-dismiss, official-upstream sync and fork-only updates. Commit: $GITHUB_SHA" \
+            --target "$GITHUB_SHA" --latest
