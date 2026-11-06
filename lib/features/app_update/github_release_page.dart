@@ -2,9 +2,9 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html;
 
 import 'app_release.dart';
+import 'update_repository.dart';
 
-const githubReleaseBase =
-    'https://github.com/Venera-Works/Venera-Plus/releases';
+const githubReleaseBase = updateReleaseBase;
 
 AppRelease? parseGitHubReleasePage(
   String source, {
@@ -45,7 +45,7 @@ List<AppReleaseAsset> parseGitHubReleaseAssets(
 ) {
   final document = html.parseFragment(source);
   final prefix =
-      '/Venera-Works/Venera-Plus/releases/download/${Uri.encodeComponent(release.tag)}/';
+      '/$updateRepository/releases/download/${Uri.encodeComponent(release.tag)}/';
   return [
     for (final row in document.querySelectorAll('li'))
       for (final link in row.querySelectorAll('a[href]'))
