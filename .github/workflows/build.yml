@@ -20,6 +20,10 @@ on:
         required: false
         type: boolean
         default: true
+      custom_ios_build:
+        required: false
+        type: string
+        default: ''
       build_linux_x64:
         required: false
         type: boolean
@@ -408,6 +412,183 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - name: 下载 OpenList iOS 内核
         run: python3 .github/scripts/fetch_openlist_core.py ios
+      - name: 注入定制 iOS 构建号
+        if: ${{ inputs.custom_ios_build != '' }}
+        env:
+          CUSTOM_IOS_BUILD: ${{ inputs.custom_ios_build }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+          source = Path('pubspec.yaml')
+          text = source.read_text()
+          build = 100000 + int(os.environ['CUSTOM_IOS_BUILD'])
+          patched, count = re.subn(
+              r'(?m)^(version:\s*)([^+\n]+)(?:\+[0-9]+)?$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r\n')
+          IOS_VERSION="${APP_VERSION%%+*}"
+          IOS_BUILD="${APP_VERSION#*+}"
+          if [ "$IOS_BUILD" = "$APP_VERSION" ]; then
+            IOS_BUILD=1
+          fi
+          IOS_VERSION="${IOS_VERSION%%-*}"
+          echo "正在根据 ${APP_VERSION} 构建 iOS 包版本 ${IOS_VERSION}+${IOS_BUILD}"
+          flutter build ios \
+            --no-pub \
+            --release \
+            --no-codesign \
+            --build-name="$IOS_VERSION" \
+            --build-number="$IOS_BUILD"
+      - name: 校验 iOS 包含 OpenList 内核
+        run: |
+          # 静态框架由 AppDelegate 的 OpenlistcoreInvoke 强引用链接进 Runner。
+          test -s ios/Frameworks/Openlistcore.xcframework/ios-arm64/Openlistcore.framework/Openlistcore
+          test -s build/ios/iphoneos/Runner.app/Runner
+      - name: 创建 IPA
+        run: |
+          mkdir -p build/ios/iphoneos/Payload
+          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload
+          cd build/ios/iphoneos/
+          zip -r VeneraPlus-ios.ipa Payload
+      - name: 将版本号写入文件名
+        run: |
+          APP_VERSION=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r\n')
+          mkdir -p result
+          mv build/ios/iphoneos/VeneraPlus-ios.ipa "result/VeneraPlus-ios-$APP_VERSION.ipa"
+      - name: sccache 统计
+        if: ${{ always() && steps.sccache.outcome == 'success' }}
+        run: sccache --show-stats
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios_build
+          path: result/
+          if-no-files-found: error
+          retention-days: 7
+
+  Build_Linux_x64:
+    if: ${{ inputs.build_linux_x64 }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: sccache
+      CARGO_INCREMENTAL: "0"
+      SCCACHE_IGNORE_SERVER_IO_ERROR: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version-file: pubspec.yaml
+          architecture: x64
+          cache: true
+      - name: 配置 sccache
+        id: sccache
+        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
+      - name: 缓存 Cargo 依赖
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: cargo-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('pubspec.lock') }}-${{ hashFiles('rust-toolchain.toml') }}
+          restore-keys: |
+            cargo-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-
+      - name: 准备 Rust 工具链
+        run: python3 .github/scripts/prepare_rust_toolchain.py
+      - run: flutter pub get --enforce-lockfile
+      - name: 下载 OpenList Linux x64 内核
+        run: python3 .github/scripts/fetch_openlist_core.py linux-x64
+      - name: 安装 Linux 构建依赖
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev webkit2gtk-4.1
+      - run: python3 debian/build.py x64
+      - name: 构建 Arch 软件包
+        run: python3 .github/scripts/build_arch_package.py
+      - name: 移除 Arch 调试包
+        run: rm -f build/linux/arch/*-debug-*.pkg.tar.zst
+      - name: sccache 统计
+        if: ${{ always() && steps.sccache.outcome == 'success' }}
+        run: sccache --show-stats
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb_build
+          path: build/linux/x64/release/debian
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: arch_build
+          path: build/linux/arch/*.pkg.tar.zst
+          if-no-files-found: error
+          retention-days: 7
+
+  Build_Linux_ARM64:
+    if: ${{ inputs.build_linux_arm64 }}
+    runs-on: ubuntu-22.04-arm
+    timeout-minutes: 30
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: sccache
+      CARGO_INCREMENTAL: "0"
+      SCCACHE_IGNORE_SERVER_IO_ERROR: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'master'
+          flutter-version-file: pubspec.yaml
+          architecture: arm64
+          cache: true
+      - name: Flutter 环境诊断
+        run: |
+          flutter --version
+          uname -m
+      - name: 配置 sccache
+        id: sccache
+        uses: Mozilla-Actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
+      - name: 缓存 Cargo 依赖
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: cargo-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('pubspec.lock') }}-${{ hashFiles('rust-toolchain.toml') }}
+          restore-keys: |
+            cargo-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-
+      - name: 准备 Rust 工具链
+        run: python3 .github/scripts/prepare_rust_toolchain.py
+      - run: flutter pub get --enforce-lockfile
+      - name: 下载 OpenList Linux ARM64 内核
+        run: python3 .github/scripts/fetch_openlist_core.py linux-arm64
+      - name: 安装 Linux 构建依赖
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev webkit2gtk-4.1
+      - name: 修补字体
+        run: dart run patch/font.dart
+      - run: python3 debian/build.py arm64
+      - name: sccache 统计
+        if: ${{ always() && steps.sccache.outcome == 'success' }}
+        run: sccache --show-stats
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb_arm64_build
+          path: build/linux/arm64/release/debian
+          if-no-files-found: error
+          retention-days: 7
+,
+              lambda m: m.group(1) + m.group(2) + '+' + str(build),
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise RuntimeError('Cannot update pubspec version')
+          source.write_text(patched)
+          PY
       - name: 构建 iOS 应用
         run: |
           APP_VERSION=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r\n')
