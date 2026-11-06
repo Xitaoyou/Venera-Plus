@@ -97,7 +97,8 @@ class _App {
   Future<void> _initVersion() async {
     final pubspec = await rootBundle.loadString("pubspec.yaml");
     final data = loadYaml(pubspec);
-    version = data["version"].toString().split('+').first;
+    final rawVersion = data["version"].toString();
+    version = Platform.isIOS ? rawVersion : rawVersion.split('+').first;
   }
 
   Future<void> initComponents([

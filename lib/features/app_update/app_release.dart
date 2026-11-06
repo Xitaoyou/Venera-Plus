@@ -80,6 +80,8 @@ class AppRelease {
     return _assetNamed('VeneraPlus-$version-android.apk');
   }
 
+  AppReleaseAsset? iosAsset() => _assetNamed('VeneraPlus-ios-$version.ipa');
+
   AppReleaseAsset? windowsAsset({required bool portable, bool arm64 = false}) {
     final platform = arm64 ? 'windows-arm64' : 'windows';
     final suffix = portable ? 'portable.zip' : 'installer.exe';
@@ -140,10 +142,15 @@ bool _compareVersion(String remoteVersion, String currentVersion) {
     final b = i < current.length ? current[i] : 0;
     if (a != b) return a > b;
   }
-  return _comparePrerelease(
-    _prerelease(remoteVersion),
-    _prerelease(currentVersion),
-  );
+  final remotePre = _prerelease(remoteVersion);
+  final currentPre = _prerelease(currentVersion);
+  if (_comparePrerelease(remotePre, currentPre)) return true;
+  if (remotePre != currentPre) return false;
+  final remoteBuild = remoteVersion.contains('+')
+      ? int.tryParse(remoteVersion.split('+').last) ?? 0 : 0;
+  final currentBuild = currentVersion.contains('+')
+      ? int.tryParse(currentVersion.split('+').last) ?? 0 : 0;
+  return remoteBuild > currentBuild;
 }
 
 String _versionCore(String version) =>

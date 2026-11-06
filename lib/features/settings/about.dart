@@ -6,6 +6,7 @@ import 'package:venera_plus/components/appbar.dart';
 import 'package:venera_plus/components/button.dart';
 import 'package:venera_plus/components/scroll.dart';
 import 'package:venera_plus/features/app_update/app_update.dart';
+import 'package:venera_plus/features/app_update/update_repository.dart';
 import 'package:venera_plus/features/settings/setting_components.dart';
 import 'package:venera_plus/foundation/app.dart';
 import 'package:venera_plus/foundation/context.dart';
@@ -87,7 +88,7 @@ class _AboutSettingsState extends State<AboutSettings> {
           title: const Text("Github"),
           trailing: const Icon(Icons.open_in_new),
           onTap: () {
-            launchUrlString("https://github.com/Venera-Works/Venera-Plus");
+            launchUrlString(updateRepositoryUrl);
           },
         ).toSliver(),
       ],

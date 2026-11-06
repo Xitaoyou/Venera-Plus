@@ -20,6 +20,10 @@ on:
         required: false
         type: boolean
         default: true
+      custom_ios_build:
+        required: false
+        type: string
+        default: ''
       build_linux_x64:
         required: false
         type: boolean
@@ -157,6 +161,8 @@ jobs:
       - name: 检查 rust-toolchain.toml
         run: rustup show
       - run: flutter pub get --enforce-lockfile
+      - name: 配置 rhttp 签名预编译库
+        run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList Android 内核
         run: python3 .github/scripts/fetch_openlist_core.py android
       - run: flutter build apk --release
@@ -228,6 +234,8 @@ jobs:
             cargo-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-
       - name: 获取 Flutter 依赖
         run: flutter pub get --enforce-lockfile
+      - name: 配置 rhttp 签名预编译库
+        run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList Windows 内核
         shell: pwsh
         run: python .github/scripts/fetch_openlist_core.py windows-x64
@@ -320,12 +328,16 @@ jobs:
       - name: 串行化 Rustup 安装操作
         run: |
           install "$(command -v rustup)" "$RUNNER_TEMP/rustup"
+          mkdir -p "$HOME/.cargo/bin"
           rm -f "$HOME/.cargo/bin/rustup"
           install .github/scripts/serialized_rustup.py "$HOME/.cargo/bin/rustup"
           chmod +x "$HOME/.cargo/bin/rustup"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
           echo "RUSTUP_REAL_BINARY=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
           echo "RUSTUP_LOCK_FILE=$RUNNER_TEMP/venera-plus-rustup.lock" >> "$GITHUB_ENV"
       - run: flutter pub get --enforce-lockfile
+      - name: 配置 rhttp 签名预编译库
+        run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList macOS 内核
         run: python3 .github/scripts/fetch_openlist_core.py macos-universal
       - name: 检查 rust-toolchain.toml
@@ -406,8 +418,20 @@ jobs:
           echo "RUSTUP_REAL_BINARY=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
           echo "RUSTUP_LOCK_FILE=$RUNNER_TEMP/venera-plus-rustup.lock" >> "$GITHUB_ENV"
       - run: flutter pub get --enforce-lockfile
+      - name: 配置 rhttp 签名预编译库
+        run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList iOS 内核
         run: python3 .github/scripts/fetch_openlist_core.py ios
+      - name: Set custom iOS build number
+        if: ${{ inputs.custom_ios_build != '' }}
+        env:
+          CUSTOM_IOS_BUILD: ${{ inputs.custom_ios_build }}
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)
+          BASE=$(printf "%s" "$VERSION" | cut -d+ -f1)
+          BUILD=$((200000 + CUSTOM_IOS_BUILD))
+          sed -i '' "s/^version:.*/version: $BASE+$BUILD/" pubspec.yaml
       - name: 构建 iOS 应用
         run: |
           APP_VERSION=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r\n')
@@ -483,6 +507,8 @@ jobs:
       - name: 准备 Rust 工具链
         run: python3 .github/scripts/prepare_rust_toolchain.py
       - run: flutter pub get --enforce-lockfile
+      - name: 配置 rhttp 签名预编译库
+        run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList Linux x64 内核
         run: python3 .github/scripts/fetch_openlist_core.py linux-x64
       - name: 安装 Linux 构建依赖
@@ -547,6 +573,8 @@ jobs:
       - name: 准备 Rust 工具链
         run: python3 .github/scripts/prepare_rust_toolchain.py
       - run: flutter pub get --enforce-lockfile
+      - name: 配置 rhttp 签名预编译库
+        run: dart tool/prepare_rhttp_prebuilt.dart
       - name: 下载 OpenList Linux ARM64 内核
         run: python3 .github/scripts/fetch_openlist_core.py linux-arm64
       - name: 安装 Linux 构建依赖

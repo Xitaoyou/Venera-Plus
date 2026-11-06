@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:venera_plus/network/app_dio.dart';
 
 import 'app_release.dart';
+import 'update_repository.dart';
 import 'github_release_page.dart';
 
 class AppUpdateService {
@@ -75,8 +76,8 @@ class AppUpdateService {
   ) async {
     final response = await _client.get<dynamic>(
       includePrerelease
-          ? 'https://api.github.com/repos/Venera-Works/Venera-Plus/releases?per_page=20'
-          : 'https://api.github.com/repos/Venera-Works/Venera-Plus/releases/latest',
+          ? '$updateApiBase/releases?per_page=20'
+          : '$updateApiBase/releases/latest',
       options: Options(headers: {'Accept': 'application/vnd.github+json'}),
     );
     final data = response.data is String
