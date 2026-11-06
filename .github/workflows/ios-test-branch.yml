@@ -1,4 +1,4 @@
-name: iOS custom feature branch test
+name: Test custom iOS IPA on feature branch
 on:
   push:
     branches:
@@ -10,9 +10,9 @@ permissions:
 
 jobs:
   ios:
-    name: Analyze, test, and build unsigned iOS IPA
+    name: Analyze, test and build iOS IPA
     runs-on: macos-15
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -23,43 +23,24 @@ jobs:
           cache: true
       - name: Select Xcode
         run: sudo xcode-select --switch /Applications/Xcode_16.4.app
-      - name: Flutter dependencies
+      - name: Fetch Flutter dependencies
         run: flutter pub get --enforce-lockfile
-      - name: Format patched Dart files for this test build
+      - name: Format patched files for the test build
         run: |
-          dart format \
-            lib/foundation/app.dart \
-            lib/foundation/appdata.dart \
-            lib/features/app_update \
-            lib/features/comic_details/cover_viewer.dart \
-            lib/features/image_favorites/image_favorites_photo_view.dart \
-            lib/features/reader/gesture.dart \
-            lib/features/reader/reader_page.dart \
-            lib/features/settings/reader.dart \
-            lib/features/settings/about.dart \
-            lib/features/swipe_dismiss \
-            test/features/swipe_dismiss
-      - name: Flutter analyze modified files
+          dart format lib/features/swipe_dismiss lib/features/app_update
+          dart format lib/features/reader/gesture.dart lib/features/reader/reader_page.dart
+          dart format lib/features/comic_details/cover_viewer.dart lib/features/image_favorites/image_favorites_photo_view.dart
+          dart format lib/features/settings/reader.dart lib/features/settings/about.dart
+          dart format lib/foundation/app.dart lib/foundation/appdata.dart
+          dart format test/features/swipe_dismiss
+      - name: Static analysis
         run: |
-          flutter analyze --no-pub --no-fatal-infos \
-            lib/features/swipe_dismiss \
-            lib/features/reader/reader_page.dart \
-            lib/features/reader/gesture.dart \
-            lib/features/comic_details/cover_viewer.dart \
-            lib/features/image_favorites/image_favorites_photo_view.dart \
-            lib/features/settings/reader.dart \
-            lib/features/app_update \
-            lib/foundation/app.dart \
-            lib/foundation/appdata.dart \
-            test/features/swipe_dismiss
-      - name: Run custom gesture tests
+          flutter analyze --no-pub --no-fatal-infos lib/features/swipe_dismiss lib/features/reader/reader_page.dart lib/features/reader/gesture.dart lib/features/comic_details/cover_viewer.dart lib/features/image_favorites/image_favorites_photo_view.dart lib/features/settings/reader.dart lib/features/app_update lib/foundation/app.dart lib/foundation/appdata.dart test/features/swipe_dismiss
+      - name: Test gesture priority
         run: flutter test test/features/swipe_dismiss/
-      - name: Prepare Rust toolchains
+      - name: Prepare Rust
         run: |
-          python3 .github/scripts/prepare_rust_toolchain.py \
-            --target aarch64-apple-darwin \
-            --target x86_64-apple-darwin \
-            --target aarch64-apple-ios
+          python3 .github/scripts/prepare_rust_toolchain.py --target aarch64-apple-darwin --target x86_64-apple-darwin --target aarch64-apple-ios
       - name: Serialize rustup
         run: |
           install "$(command -v rustup)" "$RUNNER_TEMP/rustup"
@@ -70,60 +51,30 @@ jobs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
           echo "RUSTUP_REAL_BINARY=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
           echo "RUSTUP_LOCK_FILE=$RUNNER_TEMP/venera-plus-rustup.lock" >> "$GITHUB_ENV"
-      - name: Download native iOS OpenList core
+      - name: Fetch iOS OpenList core
         run: python3 .github/scripts/fetch_openlist_core.py ios
-      - name: Build iOS
+      - name: Build unsigned iOS application
         env:
-          CUSTOM_BUILD_NUMBER: ${{ github.run_number }}
+          BUILD_INDEX: ${{ github.run_number }}
         run: |
           set -euo pipefail
-          BASE=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)
-          BASE="${BASE%%+*}"
-          BUILD=$((100000 + CUSTOM_BUILD_NUMBER))
-          echo "CUSTOM_APP_VERSION=${BASE}+${BUILD}" >> "$GITHUB_ENV"
-          python3 - <<'PY'
-          from pathlib import Path
-          import os, re
-          source = Path('pubspec.yaml')
-          contents = source.read_text()
-          version = os.environ.get('CUSTOM_BUILD_NUMBER', '1')
-          build = 100000 + int(version)
-          updated, count = re.subn(
-              r'(?m)^(version:[ ]*)([^+\n]+)(?:\+[0-9]+)?            --build-name="${BASE%%-*}" --build-number="$BUILD"
-      - name: Package unsigned IPA
+          APP_VERSION=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n1)
+          NAME=$(printf "%s" "$APP_VERSION" | cut -d+ -f1)
+          IOS_NAME=$(printf "%s" "$NAME" | cut -d- -f1)
+          BUILD=$((100000 + BUILD_INDEX))
+          sed -i '' "s/^version:.*/version: $NAME+$BUILD/" pubspec.yaml
+          echo "CUSTOM_APP_VERSION=$NAME+$BUILD" >> "$GITHUB_ENV"
+          flutter build ios --no-pub --release --no-codesign --build-name="$IOS_NAME" --build-number="$BUILD"
+      - name: Package IPA
         run: |
           set -euo pipefail
           test -s build/ios/iphoneos/Runner.app/Runner
           mkdir -p dist/Payload
           cp -R build/ios/iphoneos/Runner.app dist/Payload/
-          (cd dist && zip -qr "VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa" Payload)
+          (cd dist && zip -qr "VeneraPlus-ios-$CUSTOM_APP_VERSION.ipa" Payload)
           rm -rf dist/Payload
-          test -s "dist/VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa"
-      - name: Upload IPA for phone testing
-        uses: actions/upload-artifact@v4
-        with:
-          name: custom-ios-ipa
-          path: dist/*.ipa
-          if-no-files-found: error
-          retention-days: 30
-,
-              lambda match: match.group(1) + match.group(2) + '+' + str(build),
-              contents, count=1)
-          assert count == 1, 'pubspec version not found'
-          source.write_text(updated)
-          PY
-          flutter build ios --no-pub --release --no-codesign \
-            --build-name="${BASE%%-*}" --build-number="$BUILD"
-      - name: Package unsigned IPA
-        run: |
-          set -euo pipefail
-          test -s build/ios/iphoneos/Runner.app/Runner
-          mkdir -p dist/Payload
-          cp -R build/ios/iphoneos/Runner.app dist/Payload/
-          (cd dist && zip -qr "VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa" Payload)
-          rm -rf dist/Payload
-          test -s "dist/VeneraPlus-ios-${CUSTOM_APP_VERSION}.ipa"
-      - name: Upload IPA for phone testing
+          test -s "dist/VeneraPlus-ios-$CUSTOM_APP_VERSION.ipa"
+      - name: Upload iPhone test IPA
         uses: actions/upload-artifact@v4
         with:
           name: custom-ios-ipa
